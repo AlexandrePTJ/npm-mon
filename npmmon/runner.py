@@ -1,4 +1,8 @@
-import time
+import asyncio
+import os
+import os.path
+import re
+
 from watchdog.observers import Observer
 from watchdog.events import RegexMatchingEventHandler
 
@@ -26,11 +30,25 @@ class LogsTailRunner:
     def run(self):
         self._observer.schedule(self._handler, self._cfg.logs_dir, recursive=False)
         self._observer.start()
+        loop = asyncio.get_event_loop()
         try:
-            while True:
-                time.sleep(5)
-        except:
-            self._observer.stop()
-            print("Observer Stopped")
+            loop.run_forever()
+        except KeyboardInterrupt:
+            pass
         finally:
+            self._observer.stop()
             self._observer.join()
+
+
+class ReadAllRunner:
+    def __init__(self, cfg):
+        self._cfg = cfg
+
+    def run(self):
+        processor = Processor(self._cfg)
+        rx_fname = re.compile(NPM_LOGS_FILENAME_REGEX)
+        with os.scandir(self._cfg.logs_dir) as it:
+            for entry in it:
+                if rx_fname.match(entry.name) and entry.is_file():
+                    print('Process %s' % entry.name)
+                    processor.analyze_log_file(os.path.join(self._cfg.logs_dir, entry.name), from_tail=False)

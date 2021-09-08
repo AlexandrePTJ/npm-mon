@@ -1,5 +1,5 @@
 from npmmon.config import Config
-from npmmon.runner import ReadAllRunner
+from npmmon.runner import LogsTailRunner
 
 
 if __name__ == "__main__":
@@ -7,5 +7,5 @@ if __name__ == "__main__":
     cfg = Config()
     cfg.load_yaml('config.yml')
 
-    readAllRunner = ReadAllRunner(cfg)
-    readAllRunner.run()
+    logsTailRunner = LogsTailRunner(cfg)
+    logsTailRunner.run()

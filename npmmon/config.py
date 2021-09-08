@@ -1,9 +1,10 @@
 from ruyaml import YAML
+import os.path
 
 
 class Config:
     class Cache:
-        dir = "./"
+        dir = ''
         log_seek = 'log_seek_pos_cache'
         domain_dt = 'domain_datetime_cache'
 
@@ -42,11 +43,12 @@ class Config:
     influxdb = InfluxDB()
 
     def load_yaml(self, yml_path):
-        with open(yml_path, 'r') as fyaml:
-            yaml = YAML(typ='safe')
-            cfg = yaml.load(fyaml)
+        if os.path.exists(yml_path):
+            with open(yml_path, 'r') as fyaml:
+                yaml = YAML(typ='safe')
+                cfg = yaml.load(fyaml)
 
-            self.logs_dir = cfg.get('logs_dir', '')
-            self.cache.from_dict(cfg.get('cache', {}))
-            self.maxmind.from_dict(cfg.get('maxmind', {}))
-            self.influxdb.from_dict(cfg.get('influxdb', {}))
+                self.logs_dir = cfg.get('logs_dir', '')
+                self.cache.from_dict(cfg.get('cache', {}))
+                self.maxmind.from_dict(cfg.get('maxmind', {}))
+                self.influxdb.from_dict(cfg.get('influxdb', {}))

@@ -1,5 +1,6 @@
 from datetime import datetime
 import geoip2.database
+from geoip2.errors import GeoIP2Error
 import geoip2.webservice
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -8,7 +9,8 @@ import re
 import shelve
 
 
-NPM_LOG_LINE_REGEX = r'\[(?P<datetime>.*?)\].*(?P<scheme>http[s]?)\s(?P<domain>\w+\.bouledemilk\.ovh).*\[Client (?P<ip>.*?)\].*'
+NPM_LOG_LINE_REGEX = (r'\[(?P<datetime>.*?)\].*(?P<scheme>http[s]?)\s(?P<domain>\w+\.bouledemilk\.ovh)'
+                      '.*\[Client (?P<ip>.*?)\].*')
 NPM_LOG_DATETIME_FMT = '%d/%b/%Y:%H:%M:%S %z'
 
 
@@ -34,7 +36,7 @@ class Processor:
         if self._domain_datetime_cache:
             self._domain_datetime_cache.close()
 
-    def analyze_log_file(self, log_path):
+    def analyze_log_file(self, log_path, from_tail=True):
         prev_seek_pos = self._log_seek_pos_cache.get(log_path, None)
         current_size = os.path.getsize(log_path)
 
@@ -44,7 +46,7 @@ class Processor:
 
         # Log rotation
         if prev_seek_pos is None:
-            prev_seek_pos = current_size
+            prev_seek_pos = current_size if from_tail else 0
         if prev_seek_pos > current_size:
             prev_seek_pos = 0
 
@@ -69,8 +71,13 @@ class Processor:
                 self._record_log_entry(*r.groups())
 
     def _get_location_from_ip(self, ip):
-        response = self._maxmind_client.city(ip)
-        return response.country.name, response.city.name, response.location.latitude, response.location.longitude
+        try:
+            response = self._maxmind_client.city(ip)
+            return response.country.name, response.city.name, response.location.latitude, response.location.longitude
+        except GeoIP2Error as e:
+            print(e)
+        finally:
+            return '', '', '', ''
 
     def _record_log_entry(self, logts, scheme, domain, ip):
         country, city, latitude, longitude = self._get_location_from_ip(ip)
