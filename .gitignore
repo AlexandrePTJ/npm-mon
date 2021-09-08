@@ -5,3 +5,4 @@ config.yml
 *.bak
 *.dat
 *.dir
+/cache/

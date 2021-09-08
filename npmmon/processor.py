@@ -17,6 +17,8 @@ NPM_LOG_DATETIME_FMT = '%d/%b/%Y:%H:%M:%S %z'
 class Processor:
 
     def __init__(self, cfg):
+        self._cfg = cfg
+
         # Cache files for log file position (like tail -f) and avoid redundant insert
         self._log_seek_pos_cache = shelve.open(os.path.join(cfg.cache.dir, cfg.cache.log_seek))
         self._domain_datetime_cache = shelve.open(os.path.join(cfg.cache.dir, cfg.cache.domain_dt))
@@ -29,6 +31,10 @@ class Processor:
             self._maxmind_client = geoip2.database.Reader(cfg.maxmind.db)
         else:
             self._maxmind_client = geoip2.webservice.Client(cfg.maxmind.id, cfg.maxmind.pk, host='geolite.info')
+
+        # InfluxDB
+        self._influxdb_client = InfluxDBClient(url=cfg.influxdb.host, token=cfg.influxdb.token, org=cfg.influxdb.org)
+        self._influxdb_write_api = self._influxdb_client.write_api(SYNCHRONOUS)
 
     def __del__(self):
         if self._log_seek_pos_cache:
@@ -68,7 +74,7 @@ class Processor:
             last_dt_access = self._domain_datetime_cache.get(r.group('domain'), None)
             if last_dt_access is None or dt > last_dt_access:
                 self._domain_datetime_cache[r.group('domain')] = dt
-                self._record_log_entry(*r.groups())
+                self._record_log_entry(dt, r.group('scheme'), r.group('domain'), r.group('ip'))
 
     def _get_location_from_ip(self, ip):
         try:
@@ -76,9 +82,17 @@ class Processor:
             return response.country.name, response.city.name, response.location.latitude, response.location.longitude
         except GeoIP2Error as e:
             print(e)
-        finally:
-            return '', '', '', ''
+            return '', '', 0.0, 0.0
 
     def _record_log_entry(self, logts, scheme, domain, ip):
         country, city, latitude, longitude = self._get_location_from_ip(ip)
-        print(f'datetime: {logts}\nscheme: {scheme}\ndomain: {domain}\nip: {ip}\ncountry: {country}\ncity: {city}')
+        p = Point("Access") \
+            .tag('domain', domain) \
+            .tag('scheme', scheme) \
+            .field('ip', ip) \
+            .field('city', city) \
+            .field('country', country) \
+            .field('latitude', float(latitude)) \
+            .field('longitude', float(longitude)) \
+            .time(logts)
+        self._influxdb_write_api.write(bucket=self._cfg.influxdb.bucket, record=p)
