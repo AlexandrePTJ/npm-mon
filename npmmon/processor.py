@@ -9,8 +9,7 @@ import re
 import shelve
 
 
-NPM_LOG_LINE_REGEX = (r'\[(?P<datetime>.*?)\].*(?P<scheme>http[s]?)\s(?P<domain>\w+\.bouledemilk\.ovh)'
-                      '.*\[Client (?P<ip>.*?)\].*')
+NPM_LOG_LINE_REGEX = (r'\[(?P<datetime>.*?)\].*(?P<scheme>http[s]?)\s(?P<domain>%s).*\[Client (?P<ip>.*?)\].*')
 NPM_LOG_DATETIME_FMT = '%d/%b/%Y:%H:%M:%S %z'
 
 
@@ -24,7 +23,7 @@ class Processor:
         self._domain_datetime_cache = shelve.open(os.path.join(cfg.cache.dir, cfg.cache.domain_dt))
 
         # Compile most used regex
-        self._rx_access_infos = re.compile(NPM_LOG_LINE_REGEX)
+        self._rx_access_infos = re.compile(NPM_LOG_LINE_REGEX % cfg.logs.domain_rx)
 
         # GeoIP2 client
         if cfg.maxmind.prefer_db and os.path.exists(cfg.maxmind.db):

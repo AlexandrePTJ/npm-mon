@@ -28,7 +28,7 @@ class LogsTailRunner:
         self._cfg = cfg
 
     def run(self):
-        self._observer.schedule(self._handler, self._cfg.logs_dir, recursive=False)
+        self._observer.schedule(self._handler, self._cfg.logs.dir, recursive=False)
         self._observer.start()
         loop = asyncio.get_event_loop()
         try:
@@ -47,8 +47,8 @@ class ReadAllRunner:
     def run(self):
         processor = Processor(self._cfg)
         rx_fname = re.compile(NPM_LOGS_FILENAME_REGEX)
-        with os.scandir(self._cfg.logs_dir) as it:
+        with os.scandir(self._cfg.logs.dir) as it:
             for entry in it:
                 if rx_fname.match(entry.name) and entry.is_file():
                     print('Process %s' % entry.name)
-                    processor.analyze_log_file(os.path.join(self._cfg.logs_dir, entry.name), from_tail=False)
+                    processor.analyze_log_file(os.path.join(self._cfg.logs.dir, entry.name), from_tail=False)

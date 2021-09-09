@@ -3,6 +3,14 @@ import os.path
 
 
 class Config:
+    class Logs:
+        dir = ''
+        domain_rx = ''
+
+        def from_dict(self, d):
+            self.dir = d.get('dir', self.dir)
+            self.domain_rx = d.get('domain_rx', self.domain_rx)
+
     class Cache:
         dir = ''
         log_seek = 'log_seek_pos_cache'
@@ -37,7 +45,7 @@ class Config:
             self.org = d.get('org', self.org)
             self.bucket = d.get('bucket', self.bucket)
 
-    logs_dir = ''
+    logs = Logs()
     cache = Cache()
     maxmind = MaxMind()
     influxdb = InfluxDB()
@@ -48,7 +56,7 @@ class Config:
                 yaml = YAML(typ='safe')
                 cfg = yaml.load(fyaml)
 
-                self.logs_dir = cfg.get('logs_dir', '')
+                self.logs.from_dict(cfg.get('logs', {}))
                 self.cache.from_dict(cfg.get('cache', {}))
                 self.maxmind.from_dict(cfg.get('maxmind', {}))
                 self.influxdb.from_dict(cfg.get('influxdb', {}))
