@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from datetime import datetime
 import geoip2.database
 from geoip2.errors import GeoIP2Error

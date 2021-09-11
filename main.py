@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import argparse
 from npmmon.config import Config
 from npmmon.runner import LogsTailRunner, ReadAllRunner

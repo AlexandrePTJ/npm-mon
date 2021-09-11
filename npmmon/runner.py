@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import asyncio
 import os
 import os.path
@@ -8,7 +10,7 @@ from watchdog.events import RegexMatchingEventHandler
 
 from .processor import Processor
 
-NPM_LOGS_FILENAME_REGEX = r'.*proxy-host-\d+_access.log'
+NPM_LOGS_FILENAME_REGEX = r'.*proxy-host-\d+_access.log$'
 
 
 class LogsTailRunner:

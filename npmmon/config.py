@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from ruyaml import YAML
 import os.path
 
