@@ -78,22 +78,21 @@ class Processor:
                 self._record_log_entry(dt, r.group('scheme'), r.group('domain'), r.group('ip'))
 
     def _get_location_from_ip(self, ip):
-        try:
-            response = self._maxmind_client.city(ip)
-            return response.country.name, response.city.name, response.location.latitude, response.location.longitude
-        except GeoIP2Error as e:
-            print(e)
-            return '', '', 0.0, 0.0
+        response = self._maxmind_client.city(ip)
+        return response.country.name, response.city.name, response.location.latitude, response.location.longitude
 
     def _record_log_entry(self, logts, scheme, domain, ip):
-        country, city, latitude, longitude = self._get_location_from_ip(ip)
-        p = Point("Access") \
-            .tag('domain', domain) \
-            .tag('scheme', scheme) \
-            .field('ip', ip) \
-            .field('city', city) \
-            .field('country', country) \
-            .field('latitude', float(latitude)) \
-            .field('longitude', float(longitude)) \
-            .time(logts)
-        self._influxdb_write_api.write(bucket=self._cfg.influxdb.bucket, record=p)
+        try:
+            country, city, latitude, longitude = self._get_location_from_ip(ip)
+            p = Point("Access") \
+                .tag('domain', domain) \
+                .tag('scheme', scheme) \
+                .field('ip', ip) \
+                .field('city', city) \
+                .field('country', country) \
+                .field('latitude', float(latitude)) \
+                .field('longitude', float(longitude)) \
+                .time(logts)
+            self._influxdb_write_api.write(bucket=self._cfg.influxdb.bucket, record=p)
+        except GeoIP2Error as e:
+            print(e)
